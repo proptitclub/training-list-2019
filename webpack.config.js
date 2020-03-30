@@ -1,48 +1,86 @@
-const path = require("path");
+const path = require('path')
 const { CleanWebpackPlugin } = require('clean-webpack-plugin')
-var HtmlWebpackPlugin = require("html-webpack-plugin");
-const OptimizeCssAssetsPlugin = require('optimize-css-assets-webpack-plugin')
-const MiniCssExtractPlugin = require('mini-css-extract-plugin')
-const TerserPlugin = require('terser-webpack-plugin')
+var HtmlWebpackPlugin = require('html-webpack-plugin')
 
 module.exports = {
-  mode: "production",
-  entry: "./src/index.js",
+  context: path.resolve(process.cwd(), ''),
+  entry: ['babel-polyfill', './src/index.js'],
   output: {
-    path: path.resolve(__dirname, "dist"),
-    filename: "bundle.js"
+    path: path.resolve(process.cwd(), './dist'),
+    filename: '[name].[hash:8].js'
   },
   module: {
     rules: [
       {
-        test: /\.(js|jsx|mjs)$/,
+        test: /\.(js|jsx|mjs|ts|tsx)$/,
         exclude: /node_modules/,
-        use: "babel-loader"
+        use: 'babel-loader'
       },
       {
-        test: /\.css$/i,
+        test: /\.ts(x?)$/,
+        exclude: /node_modules/,
         use: [
-            {
-              loader: MiniCssExtractPlugin.loader,
-              options: {
-                publicPath: '../',
-                hmr: process.env.NODE_ENV === 'development'
-              }
-            },
-            'css-loader'
-          ]
+          {
+            loader: 'ts-loader'
+          }
+        ]
+      },
+      // All output '.js' files will have any sourcemaps re-processed by 'source-map-loader'.
+      {
+        enforce: 'pre',
+        test: /\.js$/,
+        loader: 'source-map-loader'
+      },
+      {
+        test: /\.css$/,
+        use: [
+          {
+            loader: 'style-loader'
+          },
+          {
+            loader: 'css-loader'
+          }
+        ]
+      },
+      {
+        test: /\.svg$/,
+        use: [
+          {
+            loader: 'raw-loader'
+          }
+        ]
+      },
+      {
+        test: /\.(jpe?g|png|gif|svg)$/i,
+        loader: 'file-loader?name=/images/[name].[ext]'
+      },
+      {
+        test: /particles\.js/,
+        loader:
+          'exports-loader?particlesJS=window.particlesJS,pJSDom=window.pJSDom'
       }
     ]
   },
   plugins: [
     new CleanWebpackPlugin(),
-    new MiniCssExtractPlugin({ filename: '[name].[hash:8].css' }),
     new HtmlWebpackPlugin({
-      template: "./public/index.html",
-      favicon: './public/ProPTIT.png'
+      inject: true,
+      template: './public/index.html'
     })
   ],
-  optimization: {
-    minimizer: [new OptimizeCssAssetsPlugin(), new TerserPlugin()]
-  },
-};
+  devServer: {
+    compress: true,
+    clientLogLevel: 'none',
+    contentBase: './public',
+    overlay: true,
+    hot: false,
+    port: 8080,
+    quiet: true,
+    host: '0.0.0.0',
+    disableHostCheck: true,
+    historyApiFallback: true,
+    watchOptions: {
+      ignored: /node_modules/
+    }
+  }
+}
